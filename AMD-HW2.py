@@ -2,6 +2,7 @@
 
 ''' the importation of library and the reading of document '''
 
+from _typeshed import NoneType
 import pandas as pd
 import pandasql as ps
 import matplotlib.pyplot as plt
@@ -272,3 +273,66 @@ for c in all_cat:
         l += [str(c.split('.')[-1] + ': ' + b)]
 for b in sorted(l, reverse=True):
     print(b)
+
+
+'''[RQ4]
+    How much does each brand earn per month?\
+     Write a function that given the name of a brand in input returns, for each month, its profit.'''
+
+'''An economic profit or loss is the difference between the revenue received \
+    from the sale of an output and the costs of all inputs used.
+    We don't have sufficient information to do that. For that reason we\
+        mean the profit has a sum of money received by purchasing products.'''
+
+def brand_profit(brand):
+    o = ds_Oct.loc[ds_Oct['event_type']=='purchase'].groupby(ds_Oct.brand)['price'].sum()[brand]
+    n = ds_Nov.loc[ds_Nov['event_type']=='purchase'].groupby(ds_Nov.brand)['price'].sum()[brand]
+    return o, n
+
+'''This function below can be used to print the result of the previous function\
+    with a good presentation'''
+
+def print_brand_profit():
+    b = input()
+    o, n = brand_profit(b)
+    print('Profit for october is ' + str(o))
+    print('Profit for november is ' + str(n))
+
+print_brand_profit()
+
+
+'''Is the average price of products of different brands significantly different?'''
+
+'''To respond to this question can we print for each category the average price of products from differents brands'''
+
+for c in all_cat:
+    x = ds_expensive_brand[['brand', 'avg_price']].loc[ds_expensive_brand['category_code']==c]
+    if not x.empty: print(c.split('.')[1] + ': \n' +  x.to_string(index=False, col_space=15))
+
+'''Using the function you just created, find the top 3 brands that have suffered the biggest \
+        losses in earnings between one month and the next, specifing bothe the loss percentage \
+        and the 2 months (e.g., brand_1 lost 20% between march and april).'''
+
+brands = set(ds['brand'].loc[ds['event_type']=='purchase'].dropna())
+
+'''The function must print the 3 cases of brands wich they have a loss in the following month.
+    (profit of november is less then october)\n
+    If there is the same value for one position returns the last one.
+    We assume that there are at least 3 brands at a loss.'''
+
+v = [-1, -1, -1]
+b = ['', '', '']
+
+for brand in brands:
+    o, n = brand_profit(brand)
+    p = -1
+    if n <= o : p = ((o-n)*100)/o
+    for i in range(3):
+        if p >= v[i]:
+            b[i] = brand
+            v[i] = p
+            break
+
+print(b[0] + ' lost ' + str(v[0]) + '%' + ' between october and november')
+print(b[1] + ' lost ' + str(v[1]) + '%' + ' between october and november')
+print(b[2] + ' lost ' + str(v[2]) + '%' + ' between october and november')
