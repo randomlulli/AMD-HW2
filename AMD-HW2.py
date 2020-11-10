@@ -7,8 +7,10 @@ import pandas as pd
 import pandasql as ps
 import matplotlib.pyplot as plt
 
-ds_Oct = pd.read_csv('D:/Storage file PC/Documenti/Università/Data Science/Anno 1/Semestre 1/Algorthmic Methods of Data Mining/Homeworks/HW2/2019-Oct.csv')
-ds_Nov = pd.read_csv('D:/Storage file PC/Documenti/Università/Data Science/Anno 1/Semestre 1/Algorthmic Methods of Data Mining/Homeworks/HW2/2019-Oct.csv')
+ds_Oct = pd.read_csv('D:/Storage file PC/Documenti/Università/Data Science/Anno 1/Semestre 1/Algorthmic\
+     Methods of Data Mining/Homeworks/HW2/2019-Oct.csv', parse_dates=['event_time'], date_parser=pd.to_datetime)
+ds_Nov = pd.read_csv('D:/Storage file PC/Documenti/Università/Data Science/Anno 1/Semestre 1/Algorthmic \
+    Methods of Data Mining/Homeworks/HW2/2019-Oct.csv', parse_dates=['event_time'], date_parser=pd.to_datetime)
 
 ds = pd.concat([ds_Oct, ds_Nov])
 
@@ -336,3 +338,86 @@ for brand in brands:
 print(b[0] + ' lost ' + str(v[0]) + '%' + ' between october and november')
 print(b[1] + ' lost ' + str(v[1]) + '%' + ' between october and november')
 print(b[2] + ' lost ' + str(v[2]) + '%' + ' between october and november')
+
+
+
+'''[RQ5] 
+In what part of the day is your store most visited? \
+    Knowing which days of the week or even which hours of the day shoppers are likely to visit your online \
+    store and make a purchase may help you improve your strategies. Create a plot that for each day of the \
+    week show the hourly average of visitors your store has.'''
+
+'''The code below print a plot with the average of views for each days of week'''
+
+mon = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Monday')\
+    .loc[:, 'event_type'].value_counts().mean()
+tue = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Tuesday')\
+    .loc[:, 'event_type'].value_counts().mean()
+wed = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Wednesday')\
+    .loc[:, 'event_type'].value_counts().mean()
+thu = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Thursday')\
+    .loc[:, 'event_type'].value_counts().mean()
+fri = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Friday')\
+    .loc[:, 'event_type'].value_counts().mean()
+sat = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Saturday')\
+    .loc[:, 'event_type'].value_counts().mean()
+sun = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Sunday')\
+    .loc[:, 'event_type'].value_counts().mean()
+
+plt.figure(figsize=(20, 10))
+plt.bar(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], [mon, tue, wed, thu, fri, sat, sun])
+plt.xlabel('Days of week', fontsize=15)
+plt.ylabel('Average number of views', fontsize=15)
+plt.title('Week views', fontsize=20)
+plt.show()
+
+
+'''The code below print a plot with the average of views for each hour'''
+
+hours_label = [str(i) for i in range(24)]
+hours_values = []
+
+for h in range(24):
+    hours_values.append(ds[ds.event_type=='view'].where(ds.event_time.dt.hour == h).loc[:, 'event_type'].value_counts().mean())
+
+plt.figure(figsize=(20, 10))
+plt.bar(hours_label, hours_values)
+plt.xlabel('Hours', fontsize=15)
+plt.ylabel('Average number of views', fontsize=15)
+plt.title('Hours views', fontsize=20)
+plt.show()
+
+
+'''In the function below an user can input a day of week (ex: 'monday') and receive\
+    an "Hours view" plot for that day of week'''
+
+def dayweek_hours_views():
+
+    d = input().strip().lower().capitalize()
+
+    hours_label = [str(i) for i in range(24)]
+    hours_values = []
+
+    for h in range(24):
+        hours_values.append(ds[(ds.event_time.dt.day_name()==d) & (ds.event_type=='view')].where(ds.event_time.dt.hour == h).loc[:, 'event_type'].value_counts().mean())
+
+    plt.figure(figsize=(20, 10))
+    plt.bar(hours_label, hours_values)
+    plt.xlabel('Hours', fontsize=15)
+    plt.ylabel('Average number of views', fontsize=15)
+    plt.title('Hours views of ' + d, fontsize=20)
+    plt.show()
+
+
+
+'''[RQ6]
+The conversion rate of a product is given by the purchase rate over the number of times the product has been visited.\
+     What's the conversion rate of your online store?'''
+
+'''Find the overall conversion rate of your store.'''
+
+# to do
+
+'''Plot the purchase rate of each category and show the conversion rate of each category in decreasing order.'''
+
+#to do
