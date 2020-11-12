@@ -428,34 +428,6 @@ print('The conversion rate of the store is ' + str(total_purchase*100/total_view
 
 '''Plot the purchase rate of each category and show the conversion rate of each category in decreasing order.'''
 
-'''For a best explanation in the plot below there are the purchase rate of the 100 category with the higher purchase rate'''
-'''
-view = ds[(ds.event_type=='view')]\
-    .groupby(['category_code'])['event_type'].value_counts()
-
-purchase = ds[(ds.event_type=='purchase')]\
-    .groupby(['category_code'])['event_type'].value_counts()
-
-ds_purchase = pd.DataFrame({'purchases' : purchase}).reset_index()
-
-ds_view = pd.DataFrame({'views' : view}).reset_index()
-
-ds_rate = pd.merge(ds_view, ds_purchase, how='outer', on='category_code')
-
-list_names = ds_rate['category_code'].to_list()
-list_names = [e.split('.')[-1] for e in list_names]
-
-list_values = [ ds_rate.purchases[i]*100/ds_rate.views[i] for i in range(len(ds_rate.category_code)) ]
-
-dict_rate = OrderedDict()
-for i in range(len(list_names)):
-    dict_rate[list_names[i]] = list_values[i]
-
-dict_rate= OrderedDict(sorted(dict_rate.items(), key=itemgetter(1), reverse=True))
-'''
-'''In the plot can be exist a category with a nan value of rate'''
-
-
 ds_purchase = pd.DataFrame({'purchases' : ds[(ds.event_type=='purchase')]\
     .groupby(['category_code'])['event_type'].value_counts()}).reset_index()
 
