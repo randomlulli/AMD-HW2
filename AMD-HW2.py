@@ -1,11 +1,11 @@
 ''' insert the assignamnet introduction '''
 
 ''' the importation of library and the reading of document '''
-
-from _typeshed import NoneType
+from collections import OrderedDict
 import pandas as pd
 import pandasql as ps
 import matplotlib.pyplot as plt
+from operator import itemgetter
 
 ds_Oct = pd.read_csv('D:/Storage file PC/Documenti/Università/Data Science/Anno 1/Semestre 1/Algorthmic\
      Methods of Data Mining/Homeworks/HW2/2019-Oct.csv', parse_dates=['event_time'], date_parser=pd.to_datetime)
@@ -399,7 +399,8 @@ def dayweek_hours_views():
     hours_values = []
 
     for h in range(24):
-        hours_values.append(ds[(ds.event_time.dt.day_name()==d) & (ds.event_type=='view')].where(ds.event_time.dt.hour == h).loc[:, 'event_type'].value_counts().mean())
+        hours_values.append(ds[(ds.event_time.dt.day_name()==d) & (ds.event_type=='view')]\
+            .where(ds.event_time.dt.hour == h).loc[:, 'event_type'].value_counts().mean())
 
     plt.figure(figsize=(20, 10))
     plt.bar(hours_label, hours_values)
@@ -416,8 +417,98 @@ The conversion rate of a product is given by the purchase rate over the number o
 
 '''Find the overall conversion rate of your store.'''
 
-# to do
+'''The conversion rate represents that value, expressed as a percentage,\
+     which summarizes the ability of your web pages to transform visitors into customers.'''
+
+total_views = int(ds[ds.event_type == 'view'].loc[:, 'event_type'].value_counts())
+total_purchase = int(ds[ds.event_type == 'purchase'].loc[:, 'event_type'].value_counts())
+
+print('The conversion rate of the store is ' + str(total_purchase*100/total_views) + "%")
+
 
 '''Plot the purchase rate of each category and show the conversion rate of each category in decreasing order.'''
 
-#to do
+'''For a best explanation in the plot below there are the purchase rate of the 100 category with the higher purchase rate'''
+'''
+view = ds[(ds.event_type=='view')]\
+    .groupby(['category_code'])['event_type'].value_counts()
+
+purchase = ds[(ds.event_type=='purchase')]\
+    .groupby(['category_code'])['event_type'].value_counts()
+
+ds_purchase = pd.DataFrame({'purchases' : purchase}).reset_index()
+
+ds_view = pd.DataFrame({'views' : view}).reset_index()
+
+ds_rate = pd.merge(ds_view, ds_purchase, how='outer', on='category_code')
+
+list_names = ds_rate['category_code'].to_list()
+list_names = [e.split('.')[-1] for e in list_names]
+
+list_values = [ ds_rate.purchases[i]*100/ds_rate.views[i] for i in range(len(ds_rate.category_code)) ]
+
+dict_rate = OrderedDict()
+for i in range(len(list_names)):
+    dict_rate[list_names[i]] = list_values[i]
+
+dict_rate= OrderedDict(sorted(dict_rate.items(), key=itemgetter(1), reverse=True))
+'''
+'''In the plot can be exist a category with a nan value of rate'''
+
+
+ds_purchase = pd.DataFrame({'purchases' : ds[(ds.event_type=='purchase')]\
+    .groupby(['category_code'])['event_type'].value_counts()}).reset_index()
+
+ds_view = pd.DataFrame({'views' : ds[(ds.event_type=='view')]\
+    .groupby(['category_code'])['event_type'].value_counts()}).reset_index()
+
+cat_purchase = ds_purchase['category_code'].dropna().to_list()
+cat_rate = OrderedDict()
+
+for cat in cat_purchase:
+    v = int(ds_view[ds_view.category_code == cat]['views'])
+    p = int(ds_purchase[ds_purchase.category_code == cat]['purchases'])
+    cat_rate[cat] = p*100/v
+
+dict_rate= OrderedDict(sorted(cat_rate.items(), key=itemgetter(1), reverse = True))
+
+
+plt.figure(figsize=(int(len(cat_purchase)//8), int(len(cat_purchase)//5)))
+plt.barh([ e.split('.')[-1].replace('_', ' ') for e in dict_rate.keys() ], dict_rate.values())
+plt.gca().invert_yaxis()
+plt.xlabel('Percentage values of conversion rate', fontsize=int(len(cat_purchase)//8))
+plt.ylabel('Categories', fontsize=int(len(cat_purchase)//8))
+plt.title('Conversion rate of categories', fontsize=int((len(cat_purchase)//5)))
+plt.show()
+
+
+'''[RQ7]
+The Pareto principle states that for many outcomes roughly 80% of consequences\
+     come from 20% of the causes. Also known as 80/20 rule, in e-commerce simply means that most \
+         of your business, around 80%, likely comes from about 20% of your customers.
+Prove that the pareto principle applies to your store.'''
+
+def truncate(n):
+    n = str(n).replace('',' ').split()
+    n.reverse()
+    for i in range(1, len(n)):
+        v = int(n[i])
+        if int(n[i-1]) >= 5:
+            n[i] = str(v+1)
+    n.reverse()
+    return int(n[0] + '0'*(len(n)-1))
+
+ds_group_user = ds[ds.event_type == 'purchase']\
+    .groupby(ds.user_id)['price'].sum().sort_values(ascending=False)
+
+total_user = int(len(ds_group_user))
+user20 = (int(total_user)//100)*20
+total_business= round(int(ds_group_user.sum()))
+business80 = (int(total_business)//100)*80
+business_user20 = round(int(ds_group_user.head(user20).sum()))
+
+
+if truncate(business80) == truncate(business_user20):
+    print('The Pareto principle is proved')
+else:
+    print("The Pareto principle isn't proved")
