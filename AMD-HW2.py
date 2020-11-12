@@ -22,72 +22,52 @@ ds = pd.concat([ds_Oct, ds_Nov])
     Suppose your funnel involves just three simple steps: 1) view, 2) cart, 3) purchase. \
     Which is the rate of complete funnels?'''
 
-q_count_view = '''select distinct user_id, user_session, count(event_type) as count_view
-                from ds
-                where event_type = 'view'
-                group by user_id,  user_session
-                order by count_view desc;
-                '''
-q_count_cart = '''select distinct user_id, user_session, count(event_type) as count_cart
-                from ds
-                where event_type = 'cart'
-                group by user_id, user_session
-                order by count_cart desc;
-                '''
-q_count_purchase = '''select distinct user_id, user_session, count(event_type) as count_purchase
-                    from ds
-                    where event_type = 'purchase'
-                    group by user_id,  user_session
-                    order by count_purchase desc;
-                    '''
 
-ds_count_view = ps.sqldf(q_count_view, locals())
-ds_count_cart = ps.sqldf(q_count_cart, locals())
-ds_count_purchase = ps.sqldf(q_count_purchase, locals())
+ds_count_view = pd.DataFrame({'count_view' : ds[ds.event_type == 'view']\
+                .groupby(['user_id', 'user_session'])['event_type']\
+                .value_counts().sort_values(ascending=False)}).reset_index()
 
-q_count_event = '''select distinct v.user_id, v.user_session, v.count_view, c.count_cart, p.count_purchase
-                from ds_count_view as v
-                inner join ds_count_cart as c
-                inner join ds_count_purchase as p
-                where v.user_session = c.user_session
-                and v.user_id = c.user_id
-                and v.user_id = p.user_id
-                and v.user_session = p.user_session;
-                '''
+ds_count_cart = pd.DataFrame({'count_cart' : ds[ds.event_type == 'cart']\
+                .groupby(['user_id', 'user_session'])['event_type']\
+                .value_counts().sort_values(ascending=False)}).reset_index()
 
-ds_count_event = ps.sqldf(q_count_event, locals())
+ds_count_purchase = pd.DataFrame({'count_purchase' : ds[ds.event_type == 'purchase']\
+                    .groupby(['user_id', 'user_session'])['event_type']\
+                    .value_counts().sort_values(ascending=False)}).reset_index()
 
-'''The number of complete funnels is rappresented by the number of rows in ds_count_event.
-To calculate rate we can use the number of rows of ds_count_view. They rapresent\
-    the number of totally view session.'''
+'''merge view and cart'''
+ds_count_event = ds_count_view[['user_id', 'user_session', 'count_view']]\
+                .merge(ds_count_cart[['user_id', 'user_session', 'count_cart']],\
+                 how = 'inner', on=['user_id', 'user_session'])
 
-complete_funnels_rate = len(ds_count_event)*100/len(ds_count_view)
-print('The funnel rate is: ' + complete_funnels_rate + "%")
+'''merge view, cart and purchase'''
+ds_count_event = ds_count_event[['user_id', 'user_session', 'count_view', 'count_cart']]\
+                .merge(ds_count_purchase[['user_id', 'user_session', 'count_purchase']],\
+                 how = 'inner', on=['user_id', 'user_session'])
+
+'''The number of complete funnels is rappresented by the number of tatal purchases on the number of total views.'''
+
+complete_funnels_rate = ds_count_purchase['count_purchase'].sum()*100/len(ds_count_view)
+print('The complete funnel rate is: ' + str(round(complete_funnels_rate, 2)) + "%")
 
 '''What’s the operation users repeat more on average within a session?\
  Produce a plot that shows the average number of times users perform\
  each operation (view/removefromchart etc etc).'''
 
-# if the remove from cart is escluded remove this part
-
 '''The dataframe create can also used to print the plot for this question.\
-    In this case thre is an operation that is not defined in the principal dataframe. \
-    This is the "remove from cart" operation. That can be calculated from the number \
-    of cart minus the number of purchase.
-    Assume that the number of non-purchase for each session is a remove operation.'''
+    In this case there is an operation that is not defined in the principal dataframe. \
+    This is the "remove from cart" operation. That can be calculated with the difference between purchase and cart.'''
 
-ds_product_cart = ds[['user_id', 'user_session', 'product_id']].loc[ds['event_type'] == 'cart']
-ds_product_purchase = ds[['user_id', 'user_session', 'product_id']].loc[ds['event_type'] == 'purchase']
+removed = ds_count_event.count_cart-ds_count_event.count_purchase
 
-# define the difference
-# ---> https://datascience.stackexchange.com/questions/37227/how-to-remove-rows-from-a-data-frame-that-are-identical-to-other-df
-# for now the plot donn't have the remove operation
+ds_count_event = pd.concat([ds_count_event, pd.DataFrame(removed, columns=['remove_from_cart'])],axis=1)
 
-avg_view = ds_count_view['count_view'].mean()
-avg_cart = ds_count_cart['count_cart'].mean()
-avg_purchase = ds_count_purchase['count_purchase'].mean()
+ds_count_event.mean().to_list()[1:]
 
 # use correct plot function
+#for the plot use squarify
+
+
 
 '''How many times, on average, a user views a product before adding it to the cart?'''
 # To Do this 
