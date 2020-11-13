@@ -58,19 +58,31 @@ print('The complete funnel rate is: ' + str(round(complete_funnels_rate, 2)) + "
     In this case there is an operation that is not defined in the principal dataframe. \
     This is the "remove from cart" operation. That can be calculated with the difference between purchase and cart.'''
 
-removed = ds_count_event.count_cart-ds_count_event.count_purchase
+values = ds_count_event.mean().to_list()[1:]
+values.append(values[-2]-values[-1])
+values = [ round(x) for x in values ]
 
-ds_count_event = pd.concat([ds_count_event, pd.DataFrame(removed, columns=['remove_from_cart'])],axis=1)
+labels = ['view', 'cart', 'purchase', 'remove']
+explode = (0.05, 0, 0, 0)
 
-ds_count_event.mean().to_list()[1:]
+fig1, ax1 = plt.subplots()
+plt.rcParams['figure.figsize'] = (10, 10)
+ax1.pie(values,
+        explode=explode,
+        labels=labels,
+        autopct='%1.0f%%',
+        shadow=True,
+        startangle=180)
+ax1.axis('equal')
 
-# use correct plot function
-#for the plot use squarify
+plt.show()
 
 
 
 '''How many times, on average, a user views a product before adding it to the cart?'''
-# To Do this 
+
+#ds.groupby(['user_id', 'product_id']).agg([ds[ds.event_type=='view'].count(), ds[ds.event_type=='cart'].count()])
+
 
 '''What’s the probability that products added once to the cart are effectively bought?'''
 # To Do this 
@@ -99,129 +111,114 @@ ds_count_event.mean().to_list()[1:]
 
 '''The top 10 of category with the most popular products'''
 
-q_trending_category_oct = '''select distinct category_id, category_code, count(product_id) as count_product_sold
-                        from ds_Oct
-                        where event_type = 'purchase'
-                        group by category_id, category_code
-                        order by count_product_sold desc;'''
+ds_trending_category_oct = pd.DataFrame({'count_product_sold' : ds_Oct[ds_Oct.event_type == 'purchase']\
+                                                    .groupby(['category_id', 'category_code'])\
+                                                    ['event_type'].value_counts()\
+                                                    .sort_values(ascending=False)}).reset_index()
 
-ds_trending_category_oct = ps.sqldf(q_trending_category_oct, locals())
 ds_trending_category_oct = ds_trending_category_oct.dropna().head(10)
 
 labels_prod_cat = [e.split('.')[-1] for e in list(ds_trending_category_oct['category_code'])]
 
 plt.figure(figsize=(20, 10))
 plt.bar(labels_prod_cat, ds_trending_category_oct['count_product_sold'])
-plt.xlabel('category')
-plt.ylabel('number of sold product')
+plt.xlabel('Category', fontsize=15)
+plt.ylabel('Number of sold product', fontsize=15)
 plt.title('Top 10 trending category of october', fontsize=20)
 plt.show()
 
 
 '''The top 10 of category with the highest number of views'''
 
-q_most_viewed_category_oct = '''select distinct category_id, category_code, count(event_type) as count_view
-                        from ds_Oct
-                        where event_type = 'view'
-                        group by category_id, category_code
-                        order by count_view desc;'''
+ds_most_viewed_category_oct = pd.DataFrame({'count_view' : ds_Oct[ds_Oct.event_type == 'view']\
+                                                    .groupby(['category_id', 'category_code'])\
+                                                    ['event_type'].value_counts()\
+                                                    .sort_values(ascending=False)}).reset_index()
 
-ds_most_viewed_category_oct = ps.sqldf(q_most_viewed_category_oct, locals())
 ds_most_viewed_category_oct = ds_most_viewed_category_oct.dropna().head(10)
 
-labels_most_viewed = [e.split('.')[-1] for e in list(ds_most_viewed_category_oct['category_code'])]
+labels_most_viewed = [e.split('.')[-1].replace('_', ' ') for e in list(ds_most_viewed_category_oct['category_code'])]
 
 plt.figure(figsize=(20, 10))
 plt.bar(labels_most_viewed, ds_most_viewed_category_oct['count_view'])
-plt.xlabel('category')
-plt.ylabel('number of views')
+plt.xlabel('Category', fontsize=15)
+plt.ylabel('Number of views', fontsize=15)
 plt.title('Top 10 of most viewed category', fontsize=20)
 plt.show()
 
-'''The 10 most sold products for category.\n
-    Is possibile that a category don't have any products in list.'''
+'''The 10 (or less) most sold products for category.'''
 
-categories = set(ds_Oct['category_code'].dropna())
+categories = set(ds_Oct[ds_Oct.event_type == 'purchase']['category_code'].dropna())
 
 for c in categories:
-    x = ds_Oct[ds_Oct.category_code == c]
-    print('The 10 most sold product for ' + c.split('.')[-1].replace('_', ' '))
-    p = x[x.event_type=='purchase'].loc[:, 'product_id'].value_counts().head(10).to_string()[:]
-    if p != 'Series([], )':
-        print(p)
+    x = ds_Oct[(ds_Oct.category_code == c) & (ds_Oct.event_type=='purchase')].loc[:, 'product_id'].value_counts().head(10).to_string()
+    print('''The 10 (or less) most sold product for ''' + c.split('.')[-1].replace('_', ' '))
+    print(x)
 
 
 ''' Computating November month'''
 
 '''The top 10 of category with the most popular products'''
 
-q_trending_category_nov = '''select distinct category_id, category_code, count(product_id) as count_product_sold
-                        from ds_Nov
-                        where event_type = 'purchase'
-                        group by category_id, category_code
-                        order by count_product_sold desc;'''
+ds_trending_category_nov = pd.DataFrame({'count_product_sold' : ds_Nov[ds_Nov.event_type == 'purchase']\
+                                                    .groupby(['category_id', 'category_code'])\
+                                                    ['event_type'].value_counts()\
+                                                    .sort_values(ascending=False)}).reset_index()
 
-ds_trending_category_nov = ps.sqldf(q_trending_category_nov, locals())
 ds_trending_category_nov = ds_trending_category_nov.dropna().head(10)
 
 labels_prod_cat = [e.split('.')[-1] for e in list(ds_trending_category_nov['category_code'])]
 
 plt.figure(figsize=(20, 10))
 plt.bar(labels_prod_cat, ds_trending_category_nov['count_product_sold'])
-plt.xlabel('category')
-plt.ylabel('number of sold product')
-plt.title('Top 10 trending category of november', fontsize=20)
+plt.xlabel('Category', fontsize=15)
+plt.ylabel('Number of sold product', fontsize=15)
+plt.title('Top 10 trending category of october', fontsize=20)
 plt.show()
 
 
 '''The top 10 of category with the highest number of views'''
 
-q_most_viewed_category_nov = '''select distinct category_id, category_code, count(event_type) as count_view
-                        from ds_Nov
-                        where event_type = 'view'
-                        group by category_id, category_code
-                        order by count_view desc;'''
+ds_most_viewed_category_nov = pd.DataFrame({'count_view' : ds_Nov[ds_Nov.event_type == 'view']\
+                                                    .groupby(['category_id', 'category_code'])\
+                                                    ['event_type'].value_counts()\
+                                                    .sort_values(ascending=False)}).reset_index()
 
-ds_most_viewed_category_nov = ps.sqldf(q_most_viewed_category_nov, locals())
 ds_most_viewed_category_nov = ds_most_viewed_category_nov.dropna().head(10)
 
-labels_most_viewed = [e.split('.')[-1] for e in list(ds_most_viewed_category_nov['category_code'])]
+labels_most_viewed = [e.split('.')[-1].replace('_', ' ') for e in list(ds_most_viewed_category_nov['category_code'])]
 
 plt.figure(figsize=(20, 10))
 plt.bar(labels_most_viewed, ds_most_viewed_category_nov['count_view'])
-plt.xlabel('category')
-plt.ylabel('number of views')
+plt.xlabel('Category', fontsize=15)
+plt.ylabel('Number of views', fontsize=15)
 plt.title('Top 10 of most viewed category', fontsize=20)
 plt.show()
 
-'''The 10 most sold products for category.\n
-    Is possibile that a category don't have any products in list.'''
+'''The 10 (or less) most sold products for category.'''
 
-categories = set(ds_Nov['category_code'].dropna())
+categories = set(ds_Nov[ds_Nov.event_type == 'purchase']['category_code'].dropna())
 
 for c in categories:
-    x = ds_Nov[ds_Nov.category_code == c]
-    print('The 10 most sold product for ' + c.split('.')[-1].replace('_', ' '))
-    p = x[x.event_type=='purchase'].loc[:, 'product_id'].value_counts().head(10).to_string()[:]
-    if p != 'Series([], )':
-        print(p)
+    x = ds_Nov[(ds_Nov.category_code == c) & (ds_Nov.event_type=='purchase')]\
+        .loc[:, 'product_id'].value_counts().head(10).to_string()
+    print('''The 10 (or less) most sold product for ''' + c.split('.')[-1].replace('_', ' '))
+    print(x)
 
 '''[RQ3]
     For each category, what’s the brand whose prices are higher on average?'''
 
-q_expensive_brand = '''select distinct category_id, category_code, brand, avg(price) as avg_price
-                        from ds
-                        group by category_id
-                        order by avg_price desc'''
+ds_expensive_brand = pd.DataFrame({'avg_price' : ds_Nov.groupby(['category_id', 'category_code', 'brand'])\
+                                                    ['price'].mean()\
+                                                    .sort_values(ascending=False)}\
+                                    ).reset_index()
 
-ds_expensive_brand = ps.sqldf(q_expensive_brand, locals()).dropna()
-
-all_cat = set(ds['category_code'].dropna())
+all_cat = set(ds_expensive_brand['category_code'].dropna())
 
 for c in all_cat:
-    b = ds_expensive_brand['brand'].loc[ds_expensive_brand['category_code']==c].head(1).to_string().split()[1]
-    if b.isalpha():
-        print(c.split('.')[-1] + ': ' + b)
+    b = ds_expensive_brand[(ds_expensive_brand.category_code == c)]['brand']\
+        .dropna().head(1).to_string(index=False).strip()
+    print(c.split('.')[-1].replace('_', ' ') + ': ' + b)
 
 
 '''Write a function that asks the user a category in input and returns a plot\
@@ -229,6 +226,8 @@ for c in all_cat:
 
 '''Make a plot with an only item isn't a good practice.\
     For a best view plot the average for each category of brand.'''
+
+# MODIFY
 
 def brand_status():
     b = input()
