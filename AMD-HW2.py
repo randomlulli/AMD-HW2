@@ -81,8 +81,13 @@ plt.show()
 
 '''How many times, on average, a user views a product before adding it to the cart?'''
 
-#ds.groupby(['user_id', 'product_id']).agg([ds[ds.event_type=='view'].count(), ds[ds.event_type=='cart'].count()])
+ds_cart = ds[ds.event_type == 'cart'][['user_id', 'user_session', 'product_id']]\
+        .merge(pd.DataFrame({'views' : ds[ds.event_type == 'view']\
+        .groupby(['user_id', 'user_session', 'product_id'])['event_type'].value_counts()
+                }).reset_index()[['user_id', 'user_session', 'product_id', 'views']],\
+               how = 'inner', on=['user_id', 'user_session', 'product_id'])['views'].mean()
 
+print("An user views a product before adding it to cart for average " + str(round(ds_cart)) + " times" )
 
 '''What’s the probability that products added once to the cart are effectively bought?'''
 # To Do this 
@@ -378,7 +383,7 @@ plt.show()
 def dayweek_hours_views():
 
     d = input().strip().lower().capitalize()
-    
+
     hours_label = [str(i) for i in range(24)]
     hours_values = []
 
