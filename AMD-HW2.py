@@ -208,12 +208,15 @@ for c in categories:
 '''[RQ3]
     For each category, what’s the brand whose prices are higher on average?'''
 
-ds_expensive_brand = pd.DataFrame({'avg_price' : ds_Nov.groupby(['category_id', 'category_code', 'brand'])\
+ds_expensive_brand = pd.DataFrame({'avg_price' : ds.groupby(['category_id', 'category_code', 'brand'])\
                                                     ['price'].mean()\
                                                     .sort_values(ascending=False)}\
                                     ).reset_index()
 
-all_cat = set(ds_expensive_brand['category_code'].dropna())
+all_cat = list()
+for c in ds_expensive_brand.category_code:
+    if c not in all_cat:
+        all_cat.append(c)
 
 for c in all_cat:
     b = ds_expensive_brand[(ds_expensive_brand.category_code == c)]['brand']\
@@ -224,36 +227,30 @@ for c in all_cat:
 '''Write a function that asks the user a category in input and returns a plot\
      indicating the average price of the products sold by the brand.'''
 
-'''Make a plot with an only item isn't a good practice.\
-    For a best view plot the average for each category of brand.'''
-
-# MODIFY
-
 def brand_status():
-    b = input()
-    d = ds_expensive_brand[ds_expensive_brand.brand==b].dropna()
-    c = [i.split('.')[-1] for i in list(d['category_code'])]
+    c = input()
+
+    d = pd.DataFrame({'avg_price' : ds[(ds.category_code == c) & (ds.event_type == 'purchase')].groupby('brand')['price'].mean()}).reset_index()
+
     plt.figure(figsize=(20, 10))
-    plt.bar(c, d['avg_price'])
-    plt.xlabel('category')
-    plt.ylabel('average price of products')
-    plt.title('Average products price for ' + b, fontsize=20)
+    plt.bar(d.brand, d.avg_price)
+    plt.xticks(rotation='vertical')
+    plt.xlabel('Brand', fontsize=15)
+    plt.ylabel('Average price of products', fontsize = 15)
+    plt.title('Average price  of products for ' + c.split('.')[-1].replace('_',' '), fontsize=20)
     plt.show()
 
 brand_status()
 
 '''Find, for each category, the brand with the highest average price.\
      Return all the results in ascending order by price.'''
-    
-'''In this case is necessary print the value of ds_expensive_brand in reserve order.'''
+
 
 l = []
 for c in all_cat:
-    b = ds_expensive_brand['brand'].loc[ds_expensive_brand['category_code']==c].head(1).to_string().split()[1]
-    if b.isalpha():
-        l += [str(c.split('.')[-1] + ': ' + b)]
-for b in sorted(l, reverse=True):
-    print(b)
+    l += [(c, ds_expensive_brand[ds_expensive_brand.category_code == c]['brand'].head(1).to_string(index=False).strip())]
+for e in sorted(l, key=lambda tup: tup[1]):
+    print(e[0].split('.')[-1].replace('_', ' ') + ': ' + e[1])
 
 
 '''[RQ4]
