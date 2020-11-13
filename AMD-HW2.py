@@ -228,7 +228,7 @@ for c in all_cat:
      indicating the average price of the products sold by the brand.'''
 
 def brand_status():
-    c = input()
+    c = input().strip()
 
     d = pd.DataFrame({'avg_price' : ds[(ds.category_code == c) & (ds.event_type == 'purchase')].groupby('brand')['price'].mean()}).reset_index()
 
@@ -271,7 +271,7 @@ def brand_profit(brand):
     with a good presentation'''
 
 def print_brand_profit():
-    b = input()
+    b = input().strip()
     o, n = brand_profit(b)
     print('Profit for october is ' + str(o))
     print('Profit for november is ' + str(n))
@@ -284,8 +284,8 @@ print_brand_profit()
 '''To respond to this question can we print for each category the average price of products from differents brands'''
 
 for c in all_cat:
-    x = ds_expensive_brand[['brand', 'avg_price']].loc[ds_expensive_brand['category_code']==c]
-    if not x.empty: print(c.split('.')[1] + ': \n' +  x.to_string(index=False, col_space=15))
+    x = ds_expensive_brand[['brand', 'avg_price']].loc[(ds_expensive_brand.category_code==c)]
+    print(c.split('.')[1].replace('_', ' ') + ': \n' +  x.to_string(index=False, col_space=15))
 
 '''Using the function you just created, find the top 3 brands that have suffered the biggest \
         losses in earnings between one month and the next, specifing bothe the loss percentage \
@@ -325,20 +325,26 @@ In what part of the day is your store most visited? \
 
 '''The code below print a plot with the average of views for each days of week'''
 
-mon = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Monday')\
-    .loc[:, 'event_type'].value_counts().mean()
-tue = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Tuesday')\
-    .loc[:, 'event_type'].value_counts().mean()
-wed = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Wednesday')\
-    .loc[:, 'event_type'].value_counts().mean()
-thu = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Thursday')\
-    .loc[:, 'event_type'].value_counts().mean()
-fri = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Friday')\
-    .loc[:, 'event_type'].value_counts().mean()
-sat = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Saturday')\
-    .loc[:, 'event_type'].value_counts().mean()
-sun = ds[ds.event_type=='view'].where(ds.event_time.dt.day_name()=='Sunday')\
-    .loc[:, 'event_type'].value_counts().mean()
+mon = ds[(ds.event_type == 'view') & (ds.event_time.dt.day == 0)]\
+        .loc[:, 'event_type'].value_counts().mean()
+
+tue = ds[(ds.event_type == 'view') & (ds.event_time.dt.day == 1)]\
+        .loc[:, 'event_type'].value_counts().mean()
+
+wed = ds[(ds.event_type == 'view') & (ds.event_time.dt.day == 2)]\
+        .loc[:, 'event_type'].value_counts().mean()
+
+thu = ds[(ds.event_type == 'view') & (ds.event_time.dt.day == 3)]\
+        .loc[:, 'event_type'].value_counts().mean()
+
+fri = ds[(ds.event_type == 'view') & (ds.event_time.dt.day == 4)]\
+        .loc[:, 'event_type'].value_counts().mean()
+
+sat = ds[(ds.event_type == 'view') & (ds.event_time.dt.day == 5)]\
+        .loc[:, 'event_type'].value_counts().mean()
+
+sun = ds[(ds.event_type == 'view') & (ds.event_time.dt.day == 6)]\
+        .loc[:, 'event_type'].value_counts().mean()
 
 plt.figure(figsize=(20, 10))
 plt.bar(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], [mon, tue, wed, thu, fri, sat, sun])
@@ -348,16 +354,18 @@ plt.title('Week views', fontsize=20)
 plt.show()
 
 
+
 '''The code below print a plot with the average of views for each hour'''
 
 hours_label = [str(i) for i in range(24)]
 hours_values = []
 
 for h in range(24):
-    hours_values.append(ds[ds.event_type=='view'].where(ds.event_time.dt.hour == h).loc[:, 'event_type'].value_counts().mean())
+    hours_values.append(ds[(ds.event_type=='view') & (ds.event_time.dt.hour == h)].loc[:, 'event_type'].value_counts().mean())
 
-plt.figure(figsize=(20, 10))
-plt.bar(hours_label, hours_values)
+plt.figure(figsize=(30, 10))
+plt.plot_date(hours_label, hours_values)
+plt.plot(hours_label, hours_values)
 plt.xlabel('Hours', fontsize=15)
 plt.ylabel('Average number of views', fontsize=15)
 plt.title('Hours views', fontsize=20)
@@ -370,22 +378,21 @@ plt.show()
 def dayweek_hours_views():
 
     d = input().strip().lower().capitalize()
-
+    
     hours_label = [str(i) for i in range(24)]
     hours_values = []
 
     for h in range(24):
-        hours_values.append(ds[(ds.event_time.dt.day_name()==d) & (ds.event_type=='view')]\
-            .where(ds.event_time.dt.hour == h).loc[:, 'event_type'].value_counts().mean())
+        hours_values.append(ds[(ds.event_time.dt.day_name()==d) & (ds.event_type=='view') & (ds.event_time.dt.hour == h)]\
+            .loc[:, 'event_type'].value_counts().mean())
 
     plt.figure(figsize=(20, 10))
-    plt.bar(hours_label, hours_values)
+    plt.plot(hours_label, hours_values)
+    plt.plot_date(hours_label, hours_values)
     plt.xlabel('Hours', fontsize=15)
     plt.ylabel('Average number of views', fontsize=15)
     plt.title('Hours views of ' + d, fontsize=20)
     plt.show()
-
-
 
 '''[RQ6]
 The conversion rate of a product is given by the purchase rate over the number of times the product has been visited.\
