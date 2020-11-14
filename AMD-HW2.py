@@ -9,7 +9,7 @@ from operator import itemgetter
 ds_Oct = pd.read_csv('D:/Storage file PC/Documenti/Università/Data Science/Anno 1/Semestre 1/Algorthmic\
      Methods of Data Mining/Homeworks/HW2/2019-Oct.csv', parse_dates=['event_time'], date_parser=pd.to_datetime)
 ds_Nov = pd.read_csv('D:/Storage file PC/Documenti/Università/Data Science/Anno 1/Semestre 1/Algorthmic \
-    Methods of Data Mining/Homeworks/HW2/2019-Oct.csv', parse_dates=['event_time'], date_parser=pd.to_datetime)
+    Methods of Data Mining/Homeworks/HW2/2019-Nov.csv', parse_dates=['event_time'], date_parser=pd.to_datetime)
 
 ds = pd.concat([ds_Oct, ds_Nov])
 
