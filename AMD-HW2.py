@@ -3,7 +3,6 @@
 ''' the importation of library and the reading of document '''
 from collections import OrderedDict
 import pandas as pd
-import pandasql as ps
 import matplotlib.pyplot as plt
 from operator import itemgetter
 
@@ -35,13 +34,10 @@ ds_count_purchase = pd.DataFrame({'count_purchase' : ds[ds.event_type == 'purcha
                     .groupby(['user_id', 'user_session'])['event_type']\
                     .value_counts().sort_values(ascending=False)}).reset_index()
 
-'''merge view and cart'''
+'''merge view, cart and purchase'''
 ds_count_event = ds_count_view[['user_id', 'user_session', 'count_view']]\
                 .merge(ds_count_cart[['user_id', 'user_session', 'count_cart']],\
-                 how = 'inner', on=['user_id', 'user_session'])
-
-'''merge view, cart and purchase'''
-ds_count_event = ds_count_event[['user_id', 'user_session', 'count_view', 'count_cart']]\
+                 how = 'inner', on=['user_id', 'user_session'])[['user_id', 'user_session', 'count_view', 'count_cart']]\
                 .merge(ds_count_purchase[['user_id', 'user_session', 'count_purchase']],\
                  how = 'inner', on=['user_id', 'user_session'])
 
@@ -60,7 +56,6 @@ print('The complete funnel rate is: ' + str(round(complete_funnels_rate, 2)) + "
 
 values = ds_count_event.mean().to_list()[1:]
 values.append(values[-2]-values[-1])
-values = [ round(x) for x in values ]
 
 labels = ['view', 'cart', 'purchase', 'remove']
 explode = (0.05, 0, 0, 0)
@@ -78,7 +73,6 @@ ax1.axis('equal')
 plt.show()
 
 
-
 '''How many times, on average, a user views a product before adding it to the cart?'''
 
 ds_cart = ds[ds.event_type == 'cart'][['user_id', 'user_session', 'product_id']]\
@@ -90,15 +84,48 @@ ds_cart = ds[ds.event_type == 'cart'][['user_id', 'user_session', 'product_id']]
 print("An user views a product before adding it to cart for average " + str(round(ds_cart)) + " times" )
 
 '''What’s the probability that products added once to the cart are effectively bought?'''
-# To Do this 
 
+prob = round(ds_count_event.sum()['count_purchase']*100/ds_count_event.sum()['count_cart'], 2)
+
+print("The probability of products added once to the cart are bought is " + str(prob) + "%")
 
 '''What’s the average time an item stays in the cart before being removed?'''
-# To Do this 
+
+'''The function for converting timedelta'''
+def convert_timedelta(duration):
+    days, seconds = duration.days, duration.seconds
+    hours = days * 24 + seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = (seconds % 60)
+    return str(hours), str(minutes), str(seconds)
+
+ds_time = ds[ds.event_type == 'view'][['event_time', 'user_session', 'product_id']]\
+            .merge(ds[ds.event_type == 'cart'][['event_time', 'user_session', 'product_id']],\
+             on=['user_session', 'product_id'], how='inner', suffixes=('_v', '_c') )\
+            .merge(ds[ds.event_type == 'purchase'][['event_time', 'user_session', 'product_id']],\
+             on=['user_session', 'product_id'], how='inner').drop_duplicates(subset=['user_session', 'product_id'])    
+
+'''In our assumption a product removed is a product in cart not sold.\n
+    In this case the delta-time between remove_from_cart and cart events is the delta-time\
+        between purchase and cart. '''
+val_rem = (ds_time['event_time'] - ds_time['event_time_c']).mean()
+
+val_conv_rem = convert_timedelta(val_rem)
+
+print("The delta time is " + val_conv_rem[0] + " hours, " + val_conv_rem[1] + " minutes and " + val_conv_rem[2] + " seconds")
+
 
 '''How much time passes on average between the first view time and a purchase/addition to cart?'''
 
+'''The average delta time between the view operation and the cart or purchase one.'''
 
+val = pd.concat([(ds_time['event_time'] - ds_time['event_time_v']),\
+        (ds_time['event_time_c'] - ds_time['event_time_v'])],\
+        ignore_index = True).mean()
+
+val_conv = convert_timedelta(val)
+
+print("The delta time is " + val_conv[0] + " hours, " + val_conv[1] + " minutes and " + val_conv[2] + " seconds")
 
 '''[RQ2]
     What are the categories of the most trending products overall? \
@@ -123,7 +150,7 @@ ds_trending_category_oct = pd.DataFrame({'count_product_sold' : ds_Oct[ds_Oct.ev
 
 ds_trending_category_oct = ds_trending_category_oct.dropna().head(10)
 
-labels_prod_cat = [e.split('.')[-1] for e in list(ds_trending_category_oct['category_code'])]
+labels_prod_cat = [e.split('.')[-1].replace('_', ' ') for e in list(ds_trending_category_oct['category_code'])]
 
 plt.figure(figsize=(20, 10))
 plt.bar(labels_prod_cat, ds_trending_category_oct['count_product_sold'])
