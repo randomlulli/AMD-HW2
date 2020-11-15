@@ -1,6 +1,8 @@
 # AMD-HW2
 The repository for the group of AMD. Powered by Camilla, Ibrahim and Luca.
 
+In the notebbok there are all comments needed to comprend the execution and relative output.
+
 #----------------------------------------------------------------
 
 # Homework 2 - eCommerce analytics
